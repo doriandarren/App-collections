@@ -102,37 +102,105 @@ public class AppServices implements InfAppServices  {
 			 collectionOld.setDescription(collection.getDescription());
 			
 	}
-	
+		
+
 
 
 	@Override
 	public void addItem(String collectionId, Item item, byte[] bytes) {
-		// TODO Auto-generated method stub
 		
+		Collection col = find(Collection.class, collectionId);
+		
+		if(col==null){
+			throw new EntityNotFoundException(""
+					+ "No se encuentra un usuario con el colecctionId: " + collectionId); 
+		}		
+		
+		entityManager.persist(item);
+		item.setCollection(col);		
+		col.getItems().add(item);
+		
+		
+		if(bytes!=null){			
+			Image image = new Image();
+			image.setBytes(bytes);
+			item.setImage(image);			
+			
+			entityManager.flush();
+				
+			String url = "image_" + image.getId() + ".jpg";
+	        image.setUrl(url);
+		}        
 	}
+	
+	
 	
 	@Override
 	public void addImage(String itemId, Image image) {
-		// TODO Auto-generated method stub
-		
+		Item item = find(Item.class, itemId);	
+		if(item==null){
+			throw new EntityNotFoundException(""
+					+ "No se encuentra un usuario con el itemId: " + itemId); 
+		}
+		item.setImage(image);		
 	}
+	
+	
+	
 
 	@Override
 	public void updateItem(Item item, byte[] bytes) {
-		// TODO Auto-generated method stub
+		
+		
+		String itemId = item.getId();
+		
+		Item itemOld = entityManager.find(Item.class, itemId);
+		
+		if(item.getTitle()!=null && !item.getTitle().equals("")) {
+			itemOld.setTitle(item.getTitle());
+		}
+			
+		if(item.getDescription()!=null && !item.getDescription().equals("")) {
+			itemOld.setDescription(item.getDescription());
+		}
+		
+		
+		if(item.getImage()==null && bytes!=null) {			
+			
+			Image image = new Image();
+			image.setBytes(bytes);		
+			entityManager.flush();			
+			String url = "image_" + image.getId() + ".jpg";
+	        image.setUrl(url);			
+			itemOld.setImage(image);
+					
+		}else if( item.getImage()!=null &&  bytes!=null){
+			itemOld.getImage().setBytes(bytes); 
+		}
 		
 	}
 
 
 	
 
-	
-	
 	@Override
-	public void removeItem(String itemId) {
-		// TODO Auto-generated method stub
+	public void removeItem(String itemId) {		
+		
+		
+		Item item = entityManager.find(Item.class,itemId);		
+		Collection colec = entityManager.find(Collection.class,item.getCollection().getId());
+		Set<Item> list = colec.getItems();
+				
+		for (Item c : list) {
+			if(c.equals(item)){	
+				list.remove(c);
+				break; 
+			}
+		}
 		
 	}
+	
+	
 	
 	/** Services intented only for test  */
 	
